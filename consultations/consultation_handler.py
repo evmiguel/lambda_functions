@@ -1,9 +1,10 @@
 import boto3
-import time
+import json
 import string
 import random
 import requests
 from datetime import datetime
+from pytz import timezone
 
 def create_dynamodb_client():
     client = boto3.resource('dynamodb')
@@ -20,43 +21,40 @@ def create_consultation(payload):
             'e-mail': payload['e-mail'],
             'date': payload['date'],
             'start_time': payload['start_time'],
-            'end_time': payload['end_time']
+            'end_time': payload['end_time'],
+            'time_zone': payload['time_zone']
         }
-   # table.put_item(
-   #     Item=data
-   # )
+    table.put_item(
+        Item=data
+    )
     new_google_event(data)
 
 def new_google_event(data):
     url = "https://api.erikamiguel.com/consult/new-google-event"
-    start_time_iso = get_iso_time(data['date'], data['start_time'])
-    end_time_iso = get_iso_time(data['date'], data['end_time'])
+    start_time_iso = get_iso_time(data['date'], data['start_time'], data['time_zone'])
+    end_time_iso = get_iso_time(data['date'], data['end_time'], data['time_zone'])
     summary = "Consultation with Erika. Order ID: " + data['order']
-    e_mail = data['e-mail']
-    print start_time_iso
+    e_mail = str(data['e-mail'])
     body = {
         "summary": summary,
         "attendees": [
             { "email": e_mail }],
         "start": {
             "dateTime": start_time_iso,
-            "timeZone": "America/New_York"
         },
         "end": {
             "dateTime":  end_time_iso,
-            "timeZone": "America/New_York"
         }
     }
+    json_data = json.dumps(body, ensure_ascii=False)
+    r = requests.post(url,data=json_data)
 
-
-
-    r = requests.post(url,data=body)
-    print(r.status_code, r.reason)
-
-def get_iso_time(date, time):
+def get_iso_time(date, time, time_zone):
     time_string = date + " " + time
-    time_object = datetime.strptime(time_string, '%Y-%m-%dT%I:%M%pZ')
-    return time_object
+    time_object = datetime.strptime(time_string, '%m/%d/%Y %I:%M%p')
+    zone = timezone(time_zone)
+    time_iso = zone.localize(time_object).isoformat("T")
+    return str(time_iso)
 
 def get_latest_id(table):
     response = table.get_item(
@@ -97,8 +95,9 @@ def lambda_handler(event,context):
 if __name__ == "__main__":
     lambda_handler({
             'name': 'erika',
-            'e-mail': 'erika@erikamiguel',
-            'date': '11/10/2016',
-            'start_time': '9:00PM',
-            'end_time': '10:00PM'
+            'e-mail': 'erika@erikamiguel.com',
+            'date': '11/11/2016',
+            'start_time': '10:00AM',
+            'end_time': '11:00AM',
+            'time_zone': 'US/Eastern'
         },"context")
