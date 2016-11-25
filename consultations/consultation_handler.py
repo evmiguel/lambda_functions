@@ -13,6 +13,9 @@ def create_dynamodb_client():
 def create_consultation(payload):
     dynamodb = create_dynamodb_client()
     table = dynamodb.Table('consultations')
+    if payload['approved'] == 'yes':
+        update_table(payload["id"],payload["name"],payload["approved"],table)
+        new_google_event(payload)
     id = create_id(table)
     data = {
             'id': id,
@@ -28,6 +31,38 @@ def create_consultation(payload):
     table.put_item(
         Item=data
     )
+
+def update_table(id,name,approved,table):
+    table.update_item(
+        Key={
+            'id': int(id),
+            'name': name
+        },
+        UpdateExpression='SET approved = :val',
+        ExpressionAttributeValues={
+            ':val': approved
+        }
+    )
+
+def new_google_event(data):
+    url = "https://api.erikamiguel.com/consult/new-google-event"
+    start_time_iso = get_iso_time(data['date'], data['start_time'], data['time_zone'])
+    end_time_iso = get_iso_time(data['date'], data['end_time'], data['time_zone'])
+    summary = "Consultation with Erika. Order ID: " + data['order']
+    e_mail = str(data['e-mail'])
+    body = {
+        "summary": summary,
+        "attendees": [
+            { "email": e_mail }],
+        "start": {
+            "dateTime": start_time_iso,
+        },
+        "end": {
+            "dateTime":  end_time_iso,
+        }
+    }
+    json_data = json.dumps(body, ensure_ascii=False)
+    r = requests.post(url,data=json_data)
 
 
 def get_iso_time(date, time, time_zone):
@@ -75,10 +110,13 @@ def lambda_handler(event,context):
 
 if __name__ == "__main__":
     lambda_handler({
-            'name': 'erika',
-            'e-mail': 'insightsan@erikamiguel.com',
-            'date': '11/11/2016',
-            'start_time': '10:00AM',
-            'end_time': '11:00AM',
-            'time_zone': 'US/Eastern'
-        },"context")
+  "approved": "yes",
+  "date": "11/25/2016",
+  "e-mail": "erika@erikamiguel.com",
+  "end_time": "01:00AM",
+  "id": "5",
+  "name": "Erika Miguel",
+  "order": "980OEWAYTA",
+  "start_time": "12:00PM",
+  "time_zone": "America/New_York"
+},"context")
