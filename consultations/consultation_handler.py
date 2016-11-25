@@ -13,7 +13,7 @@ def create_dynamodb_client():
 def create_consultation(payload):
     dynamodb = create_dynamodb_client()
     table = dynamodb.Table('consultations')
-    if payload['approved'] == 'yes':
+    if 'approved' in payload and payload['approved'] == 'yes':
         update_table(payload["id"],payload["name"],payload["approved"],table)
         new_google_event(payload)
     id = create_id(table)
@@ -110,7 +110,6 @@ def lambda_handler(event,context):
 
 if __name__ == "__main__":
     lambda_handler({
-  "approved": "yes",
   "date": "11/25/2016",
   "e-mail": "erika@erikamiguel.com",
   "end_time": "01:00AM",
