@@ -15,7 +15,7 @@ def create_consultation(payload):
     table = dynamodb.Table('consultations')
     if 'approved' in payload and payload['approved'] == 'yes':
         update_table(payload["id"],payload["name"],payload["approved"],table)
-        new_google_event(payload)
+        return new_google_event(payload)
     id = create_id(table)
     data = {
             'id': id,
