@@ -28,6 +28,8 @@ def create_consultation(payload):
             'time_zone': payload['time_zone'],
             'approved': "no"
         }
+    if 'end_date' in payload:
+        data['end_date'] = payload['end_date']
     table.put_item(
         Item=data
     )
@@ -47,8 +49,11 @@ def update_table(id,name,approved,table):
 def new_google_event(data):
     url = "https://api.erikamiguel.com/consult/new-google-event"
     start_time_iso = get_iso_time(data['date'], data['start_time'], data['time_zone'])
-    end_time_iso = get_iso_time(data['date'], data['end_time'], data['time_zone'])
-    summary = "Consultation with Erika. Order ID: " + data['order']
+    if 'end_date' in data:
+        end_time_iso = get_iso_time(data['end_date'], data['end_time'], data['time_zone'])
+    else:
+        end_time_iso = get_iso_time(data['date'], data['end_time'], data['time_zone'])
+    summary = "Chat with Erika. Appointment ID: " + data['order']
     e_mail = str(data['e-mail'])
     body = {
         "summary": summary,
@@ -110,12 +115,12 @@ def lambda_handler(event,context):
 
 if __name__ == "__main__":
     lambda_handler({
-  "date": "11/25/2016",
+  "date": "11/26/2016",
   "e-mail": "erika@erikamiguel.com",
   "end_time": "01:00AM",
   "id": "5",
   "name": "Erika Miguel",
   "order": "980OEWAYTA",
-  "start_time": "12:00PM",
-  "time_zone": "America/New_York"
+  "start_time": "11:00PM",
+  "time_zone": "America/New_York",
 },"context")
