@@ -13,12 +13,14 @@ def create_dynamodb_client():
 def create_consultation(payload):
     dynamodb = create_dynamodb_client()
     table = dynamodb.Table('consultations')
+    if 'rejected' in payload:
+        delete_appointment(payload["order"],table)
+        return { "message" : "Appointment has been rejected"}
     if 'approved' in payload and payload['approved'] == 'yes':
-        update_table(payload["id"],payload["name"],payload["approved"],table)
-        return new_google_event(payload)
-    id = create_id(table)
+        update_table(payload["order"],payload["approved"],table)
+        new_google_event(payload)
+        return { "message": "Appointment has been approved." }
     data = {
-            'id': id,
             'name': payload['name'],
             'order': order_generator(),
             'e-mail': payload['e-mail'],
@@ -33,16 +35,23 @@ def create_consultation(payload):
     table.put_item(
         Item=data
     )
+    return {"message": "Appointment has been created and is waiting for approval."}
 
-def update_table(id,name,approved,table):
+def update_table(order,approved,table):
     table.update_item(
         Key={
-            'id': int(id),
-            'name': name
+            'order': order,
         },
         UpdateExpression='SET approved = :val',
         ExpressionAttributeValues={
             ':val': approved
+        }
+    )
+
+def delete_appointment(order,table):
+    table.delete_item(
+        Key={
+            'order': order
         }
     )
 
@@ -77,34 +86,6 @@ def get_iso_time(date, time, time_zone):
     time_iso = zone.localize(time_object).isoformat("T")
     return str(time_iso)
 
-def get_latest_id(table):
-    response = table.get_item(
-        Key={
-            'id': 1,
-            'name': 'latest_id'
-        }
-    )
-    item = response['Item']['latest']
-    return item
-
-def create_id(table):
-    id = get_latest_id(table)
-    latest_id = id+1
-    update_latest_id(latest_id,table)
-    return latest_id
-
-
-def update_latest_id(new_id,table):
-    table.update_item(
-        Key={
-            'id': 1,
-            'name': 'latest_id'
-        },
-        UpdateExpression='SET latest = :val',
-        ExpressionAttributeValues={
-            ':val': new_id
-        }
-    )
 
 def order_generator(size=10, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -118,7 +99,6 @@ if __name__ == "__main__":
   "date": "11/26/2016",
   "e-mail": "erika@erikamiguel.com",
   "end_time": "01:00AM",
-  "id": "5",
   "name": "Erika Miguel",
   "order": "980OEWAYTA",
   "start_time": "11:00PM",
