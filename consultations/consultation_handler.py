@@ -28,6 +28,9 @@ def create_consultation(payload):
             'start_time': payload['start_time'],
             'end_time': payload['end_time'],
             'time_zone': payload['time_zone'],
+            'company': payload['company'],
+            'message': payload['message'],
+            'phone_number': payload['phone_number'],
             'approved': "no"
         }
     if 'end_date' in payload:
@@ -62,7 +65,7 @@ def new_google_event(data):
         end_time_iso = get_iso_time(data['end_date'], data['end_time'], data['time_zone'])
     else:
         end_time_iso = get_iso_time(data['date'], data['end_time'], data['time_zone'])
-    summary = "Chat with Erika. Appointment ID: " + data['order']
+    summary = "Chat Erika/"+data['name']+". Appointment ID: " + data['order']
     e_mail = str(data['e-mail'])
     body = {
         "summary": summary,
