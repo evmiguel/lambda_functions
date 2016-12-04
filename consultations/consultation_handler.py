@@ -14,6 +14,7 @@ def create_consultation(payload):
     dynamodb = create_dynamodb_client()
     table = dynamodb.Table('consultations')
     if 'rejected' in payload:
+        send_rejection_email(payload)
         delete_appointment(payload["order"],table)
         return { "message" : "Appointment has been rejected"}
     if 'approved' in payload and payload['approved'] == 'yes':
@@ -58,6 +59,28 @@ def delete_appointment(order,table):
         }
     )
 
+def send_rejection_email(data):
+    email_client = boto3.client('ses')
+    response = email_client.send_email(
+        Source = 'erika@erikamiguel.com',
+        Destination = {
+            'ToAddresses': [
+                data['e-mail']
+            ]
+        },
+        Message={
+            'Subject': {
+                'Data': 'Chat on ' + data['date']
+            },
+            'Body': {
+                'Text': {
+                    'Data': 'Hi,\n\nUnfortunately, I am unable to chat on ' + data['date'] + ' from ' + data['start_time'] + ' to ' + data['end_time'] + '.\n\n Best,\n\nErika'
+                }
+            }
+        }
+    )
+    print response
+
 def new_google_event(data):
     url = "https://api.erikamiguel.com/consult/new-google-event"
     start_time_iso = get_iso_time(data['date'], data['start_time'], data['time_zone'])
@@ -100,10 +123,11 @@ def lambda_handler(event,context):
 if __name__ == "__main__":
     lambda_handler({
   "date": "11/26/2016",
-  "e-mail": "erika@erikamiguel.com",
+  "e-mail": "ms.erikamiguel@gmail.com",
   "end_time": "01:00AM",
   "name": "Erika Miguel",
   "order": "980OEWAYTA",
   "start_time": "11:00PM",
   "time_zone": "America/New_York",
+  "rejected": "yes"
 },"context")
