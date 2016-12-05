@@ -62,7 +62,7 @@ def delete_appointment(order,table):
 def send_rejection_email(data):
     email_client = boto3.client('ses')
     response = email_client.send_email(
-        Source = 'erika@erikamiguel.com',
+        Source = 'Erika Miguel <erika@erikamiguel.com>',
         Destination = {
             'ToAddresses': [
                 data['e-mail']
