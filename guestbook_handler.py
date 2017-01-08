@@ -12,11 +12,17 @@ def create_message(payload):
     table = dynamodb.Table('guestbook')
     date = get_date()
     data = {
-            'name': payload['name'],
-            'message': payload['message'],
-            'date' : date,
-            'order': order_generator()
-        }
+        'name': payload['name'],
+        'message': payload['message'],
+        'date' : date,
+        'order': order_generator()
+    }
+    if "photo_links" in payload:
+        photo_links = payload['photo_links']
+        link_string = ""
+        for link in photo_links:
+            link_string = link_string + "|" + link
+        data["photo_links"] = link_string    
     table.put_item(
         Item=data
     )
@@ -27,6 +33,7 @@ def get_date():
     return now.strftime("%Y-%m-%d %H:%M")
 
 def lambda_handler(event,context):
+    print event
     create_message(event)
 
 def order_generator(size=10, chars=string.ascii_uppercase + string.digits):
